@@ -10,7 +10,7 @@ Specify a URL, language(s) and a task:
 
 Example::
 
-    clam2switchboard --url https://webservices-lst.science.ru.nl/frog -l nld --task "PoS tagging"
+    clam2switchboard --url https://webservices-lst.science.ru.nl/ucto --task "Tokenisation"
 
 
 
