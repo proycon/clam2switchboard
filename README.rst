@@ -1,8 +1,10 @@
-## CLAM2Switchboard
+CLAM2Switchboard
+-----------------
 
 Converts metadata from a live CLAM webservice to (one or multiple) JSON entry/entries for the `CLARIN language research switchboard <http://github.com/clarin-eric/switchboard>`_ registry.
 
-## Usage
+Usage
+------
 
 Specify a URL, language(s) and a task:
 
