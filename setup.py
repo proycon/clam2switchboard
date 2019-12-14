@@ -34,6 +34,6 @@ setup(
     ],
     zip_safe=False,
     include_package_data=True,
-    install_requires=[ 'clam >= 3.0', 'codemetapy'],
+    install_requires=[ 'clam >= 3.0', 'codemetapy', 'iso639'],
     entry_points = {    'console_scripts': [ 'clam2switchboard = clam2switchboard.clam2switchboard:main' ] },
 )

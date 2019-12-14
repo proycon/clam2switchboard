@@ -8,6 +8,7 @@ import json
 import os
 import urllib.request
 from copy import deepcopy
+from iso639 import languages
 
 from clam.common.client import CLAMClient
 from clam.common.parameters import StringParameter, StaticParameter, ChoiceParameter, BooleanParameter
@@ -200,6 +201,11 @@ def convert(**kwargs):
                             kwargs['langencoding'] = 3
                         elif len(choice) == 2: #assume iso-639-1
                             kwargs['langencoding'] = 1
+                            try:
+                                choice = languages.get(part1=choice).part3
+                            except:
+                                print("WARNING: Skipping uninterpretable iso-639-1 language code: ", choice ,file=sys.stderr)
+                                continue
                         else:
                             print("WARNING: Skipping uninterpretable language code: ", choice ,file=sys.stderr)
                             continue
