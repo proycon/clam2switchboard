@@ -108,7 +108,7 @@ def convert(**kwargs):
         inputtemplate = next(it for it in profile.input if not it.optional)
 
         entry_name = baseentry['name'] + " (" + inputtemplate.label+")"
-        entry_filename = entry_name + '.json'
+        entry_filename = entry_name.replace('/',',') + '.json'
 
         #instantiate entry derived from base entry
         entry = deepcopy(baseentry)
