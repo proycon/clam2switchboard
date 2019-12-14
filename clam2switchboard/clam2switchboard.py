@@ -108,12 +108,24 @@ def convert(**kwargs):
         #                                     makes it assign a random ID
         #                                               ^-- self.linkToResource is an actionable value for the switchboard
 
+        for _, parameters in data.parameters:
+            for parameter in parameters:
+                if 'langparam' not in kwargs or parameter.id != kwargs['langparam']:
+                    if isinstance(parameter, StaticParameter):
+                        entry['parameters'][parameter.id] = parameter.value
+
+        for parameter in inputtemplate.parameters:
+            if 'langparam' not in kwargs or parameter.id != kwargs['langparam']:
+                if isinstance(parameter, StaticParameter):
+                    entry['parameters'][parameter.id] = inputtemplate.id + '_' + parameter.value
+
         langparameter = None
         if kwargs['langs']:
             #explicitly provided
             langs = kwargs['langs'].split(',')
         else:
             langs = []
+            local = None
             #is there a global language parameter? (CLAM doesn't predefine this)
             try:
                 langparameter = data.parameter(kwargs['langparam'])
@@ -122,6 +134,7 @@ def convert(**kwargs):
                 for parameter in inputtemplate.parameters:
                     if parameter.id == kwargs['langparam']:
                         langparameter = parameter
+                        local = inputtemplate.id
 
             if langparameter is not None:
                 if isinstance(langparameter, (StaticParameter, StringParameter)):
@@ -150,7 +163,10 @@ def convert(**kwargs):
         if langparameter:
             #make the switchboard pass the language parameter:
             entry['parameters']['lang'] = "self.linkToResourceLanguage"
-            entry['mapping']['lang'] = langparameter.id
+            if local:
+                entry['mapping']['lang'] = local + '_' + langparameter.id
+            else:
+                entry['mapping']['lang'] = langparameter.id
 
         entry['mimetypes'] = [ inputtemplate.formatclass.mimetype ]
         entry['output'] = [ output.formatclass.mimetype for output in profile.outputtemplates() ]
