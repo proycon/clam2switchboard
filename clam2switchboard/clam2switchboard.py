@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""This tool convert CLAM webservice metadata to switchboard registry metadata"""
+"""This tool obtains and converts CLAM webservice metadata to CLARIN switchboard registry metadata, writing the necessary JSON files"""
 
 import sys
 import argparse
@@ -10,7 +10,7 @@ import urllib.request
 from copy import deepcopy
 
 from clam.common.client import CLAMClient
-from clam.common.parameters import StringParameter, StaticParameter, ChoiceParameter
+from clam.common.parameters import StringParameter, StaticParameter, ChoiceParameter, BooleanParameter
 import codemeta
 
 def first(*args):
@@ -76,13 +76,17 @@ def convert(**kwargs):
         "location": first(data.system_affiliation, "unknown"), #not really the same, but will have to do for now
         "creators": data.system_author,
         "contact": {
-            "person": "Contact person",
+            "person": data.system_email, #we just use the e-mail as we can't strictly identify it with a person
             "email": data.system_email,
         },
         "version": first(data.system_version if data.system_version else None, codemetadata.get("version")),
         "authentication":  auth_msg,
         "url": data.baseurl,
         "logo": logo,
+        "mapping": {},
+        "parameters": {},
+        "mimetypes": [],
+        "languages": []
     }
     if data.system_affiliation:
         #add affiliation to creators as well:
@@ -100,82 +104,120 @@ def convert(**kwargs):
 
         inputtemplate = next(it for it in profile.input if not it.optional)
 
+        entry_name = baseentry['name'] + " (" + inputtemplate.label+")"
+        entry_filename = entry_name + '.json'
+
+        #instantiate entry derived from base entry
         entry = deepcopy(baseentry)
-        entry['name'] += " (" + inputtemplate.label+")"
+        entry['name'] = entry_name
+
+
+        if os.path.exists(entry_filename):
+            with open(entry_filename,'r',encoding='utf-8') as f:
+                existing_entry = json.loads(f.read())
+        else:
+            existing_entry = {}
+
+        #override any empty/missing values with values from the existing_entry (if any):
+        for key, value in existing_entry.items():
+            if key not in entry or entry[key] in ("",None,"unknown","unspecified"):
+                entry[key] = existing_entry[key]
+
 
         entry['parameters'] = {"project":"new","input":"self.linkToResource"}
         #                                 ^-- new is an actionable value for CLAM which
         #                                     makes it assign a random ID
         #                                               ^-- self.linkToResource is an actionable value for the switchboard
 
+
+        setparams = [] #list of (prefix, Parameter) tuples
+
+        langparameter = None
+        langparameter_prefix = None
+
+        #Collecting mandatory parameters (global)
         for _, parameters in data.parameters:
             for parameter in parameters:
                 if 'langparam' not in kwargs or parameter.id != kwargs['langparam']:
-                    if isinstance(parameter, StaticParameter):
-                        entry['parameters'][parameter.id] = parameter.value
+                    if parameter.value is not False or parameter.required:
+                        setparams.append( ("", parameter) )
+                else:
+                    langparameter = parameter
+                    langparameter_prefix = ""
 
+        #Collecting mandatory parameters (local)
         for parameter in inputtemplate.parameters:
             if 'langparam' not in kwargs or parameter.id != kwargs['langparam']:
-                if isinstance(parameter, StaticParameter):
-                    entry['parameters'][parameter.id] = inputtemplate.id + '_' + parameter.value
+                if parameter.value is not False or parameter.required:
+                    setparams.append( (inputtemplate.id + '_', parameter) )
+            elif not langparameter:
+                langparameter = parameter
+                langparameter_prefix = inputtemplate.id
 
-        langparameter = None
+        #Set collected parameters
+        for prefix, parameter in setparams:
+            if 'parameters' in existing_entry and prefix + parameter.id in 'existing_entry':
+                #take the parameter from the existing entry (this allows manual override of any parameters)
+                entry['parameters'][prefix + parameter.id] = existing_entry['parameters'][prefix + parameter.id]
+            elif isinstance(parameter, StaticParameter):
+                #no need to set static parameters, CLAM will do that
+                continue
+            elif parameter.value is not False:
+                entry['parameters'][prefix + parameter.id] = parameter.value
+            elif isinstance(parameter, ChoiceParameter):
+                #just take the first choice
+                firstchoice = parameter.choices[0]
+                if isinstance(firstchoice, (list,tuple)): firstchoice = firstchoice[0]
+            elif isinstance(parameter, BooleanParameter):
+                #unset boolean, okay
+                entry['parameters'][prefix + parameter.id] = False
+            else:
+                print("WARNING: Unable to automatically determine a value for mandatory parameter " + parameter.id + ", edit the resulting JSON entry manually to set this!",file=sys.stderr)
+                entry['parameters'][prefix + parameter.id] = "---- SET THIS VALUE MANUALLY! ----"
+
+
         if kwargs['langs']:
-            #explicitly provided
-            langs = kwargs['langs'].split(',')
+            #explicitly provided, hard override
+            entry['languages'] = kwargs['langs'].split(',')
+        elif langparameter is None:
+            if 'languages' in existing_entry:
+                #no language parameter
+                entry['languages'] = existing_entry['languages']
         else:
+            #we have a language parameter, collect language options
             langs = []
-            local = None
-            #is there a global language parameter? (CLAM doesn't predefine this)
-            try:
-                langparameter = data.parameter(kwargs['langparam'])
-            except KeyError:
-                #nope, try to find if there is any local language parameter directly associated with input then
-                for parameter in inputtemplate.parameters:
-                    if parameter.id == kwargs['langparam']:
-                        langparameter = parameter
-                        local = inputtemplate.id
-
             if langparameter is not None:
                 if isinstance(langparameter, (StaticParameter, StringParameter)):
                         if len(langparameter.value) == 3: #assume iso-639-3
                             kwargs['langencoding'] = 3
-                        elif len(langparameter.value) == 2: #assume iso-639-2
-                            kwargs['langencoding'] = 2
+                        elif len(langparameter.value) == 2: #assume iso-639-1
+                            kwargs['langencoding'] = 1
                 elif isinstance(langparameter, ChoiceParameter):
                     for choice in langparameter.choices:
                         if isinstance(choice, tuple) and len(choice) == 2: #key,value pair, grab the key
                             choice = choice[0]
-                        if len(choice) == 3:
-                            #assume iso-639-3
+                        if len(choice) == 3: #assume iso-639-3
                             kwargs['langencoding'] = 3
-                        elif len(choice) == 2:
-                            #assume iso-639-2
-                            kwargs['langencoding'] = 2
+                        elif len(choice) == 2: #assume iso-639-1
+                            kwargs['langencoding'] = 1
                         else:
-                            print("Skipping uninterpretable language code: ", choice ,file=sys.stderr)
+                            print("WARNING: Skipping uninterpretable language code: ", choice ,file=sys.stderr)
                             continue
 
                         if choice not in langs:
                             langs.append(choice)
 
-        entry['mapping'] = {"input": inputtemplate.id + '_url' }
-        if langparameter:
-            #make the switchboard pass the language parameter:
+            entry['languages'] = langs
             entry['parameters']['lang'] = "self.linkToResourceLanguage"
-            if local:
-                entry['mapping']['lang'] = local + '_' + langparameter.id
-            else:
-                entry['mapping']['lang'] = langparameter.id
+            entry['mapping']['lang'] = langparameter_prefix + '_' + langparameter.id
 
+        entry['mapping']['input'] =  inputtemplate.id + '_url'
         entry['mimetypes'] = [ inputtemplate.formatclass.mimetype ]
-        entry['output'] = [ output.formatclass.mimetype for output in profile.outputtemplates() ]
-
-        entry['languages'] = langs
+        entry['output'] = list(set( output.formatclass.mimetype for output in profile.outputtemplates() ))
         entry['langEncoding'] = "639-" + str(kwargs['langencoding'])
 
-        print("Writing " + entry['name'] + ".json" ,file=sys.stderr)
-        with open(entry['name'] + ".json",'w',encoding='utf-8') as f:
+        print("Writing " + entry_filename,file=sys.stderr)
+        with open(entry_filename,'w',encoding='utf-8') as f:
             print(json.dumps(entry,ensure_ascii=False,indent=4),file=f)
     return entry
 
