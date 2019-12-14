@@ -28,6 +28,8 @@ def first(*args):
 def convert(**kwargs):
     """Convert CLAM webservice metadata to switchboard registry metadata"""
 
+    print("Querying " + kwargs['url'] + "....",file=sys.stderr)
+
     #Connect to CLAM service and retrieve data
     client = CLAMClient(kwargs['url'])
     data = client.porch()
@@ -225,7 +227,7 @@ def convert(**kwargs):
         print("Writing " + entry_filename,file=sys.stderr)
         with open(entry_filename,'w',encoding='utf-8') as f:
             print(json.dumps(entry,ensure_ascii=False,indent=4),file=f)
-    return entry
+        yield entry
 
 def main():
     parser = argparse.ArgumentParser(description="Converts metadata for a CLAM webservice to Switchboard format", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -240,7 +242,7 @@ def main():
     args = parser.parse_args()
     #args.storeconst, args.dataset, args.num, args.bar
     args = parser.parse_args()
-    convert(**args.__dict__)
+    list(convert(**args.__dict__)) #convert is a generator so we list it to make sure it executes
 
 if __name__ == '__main__':
     main()
