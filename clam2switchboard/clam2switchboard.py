@@ -28,7 +28,7 @@ def first(*args):
 def convert(**kwargs):
     """Convert CLAM webservice metadata to switchboard registry metadata"""
 
-    print("Querying " + kwargs['url'] + "....",file=sys.stderr)
+    print("Querying " + kwargs['url'] + " ...",file=sys.stderr)
 
     #Connect to CLAM service and retrieve data
     client = CLAMClient(kwargs['url'])
@@ -72,7 +72,6 @@ def convert(**kwargs):
         "name": first(data.system_name, codemetadata.get("name")),
         "task": first(kwargs['task'], codemetadata.get("tooltask"), "unknown"),
         "deployment": "production" if not kwargs['dev'] else 'development',
-        "softwareType": "qualitative",
         "description": first(data.description, codemetadata.get("description")),
         "homepage": first(data.system_url, codemetadata.get("url"), codemetadata.get("codeRepository"), data.baseurl),
         "licence": first(data.system_license, codemetadata.get("license")),
