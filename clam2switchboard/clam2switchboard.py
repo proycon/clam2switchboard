@@ -81,7 +81,7 @@ def convert(**kwargs):
             "person": data.system_email, #we just use the e-mail as we can't strictly identify it with a person
             "email": data.system_email,
         },
-        "version": first(data.system_version if data.system_version else None, codemetadata.get("version")),
+        "version": None,
         "authentication":  auth_msg,
         "url": data.baseurl,
         "logo": logo,
@@ -90,6 +90,9 @@ def convert(**kwargs):
         "mimetypes": [],
         "languages": []
     }
+    if 'withversion' in kwargs and kwargs['withversion']:
+        baseentry['version'] = first(data.system_version if data.system_version else None, codemetadata.get("version"))
+
     if data.system_affiliation:
         #add affiliation to creators as well:
         if baseentry['creators']:
@@ -126,10 +129,10 @@ def convert(**kwargs):
                 entry[key] = existing_entry[key]
 
 
-        entry['parameters'] = {"project":"new","input":"self.linkToResource"}
+        entry['parameters'] = {"project":"new","input":None}
         #                                 ^-- new is an actionable value for CLAM which
         #                                     makes it assign a random ID
-        #                                               ^-- self.linkToResource is an actionable value for the switchboard
+        #                                               ^-- None/null is an actionable value for the switchboard
 
 
         setparams = [] #list of (prefix, Parameter) tuples
@@ -237,6 +240,7 @@ def main():
     parser.add_argument('--logo', help="Filename (not full path) of a logo image, needs to be put in registry manually", action='store',required=False)
     parser.add_argument('-l','--langs', type=str,help="Comma separated list of languages (iso-639-3 codes). If explicitly provided, they will not be derived from the service (which may not always work)", action='store',default="",required=False)
     parser.add_argument('--langparam', type=str,help="The name of the CLAM parameter that stores the language (if available at all)", action='store',default="language",required=False)
+    parser.add_argument("--withversion", help="Register version numbers", action='store')
     parser.add_argument('-e','--langencoding', type=int,help="Language encoding, set to 1 for iso-639-1 and 3 for iso-639-3", action='store',default=3,required=False)
     args = parser.parse_args()
     #args.storeconst, args.dataset, args.num, args.bar
