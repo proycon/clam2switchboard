@@ -110,6 +110,7 @@ def convert(**kwargs):
         inputtemplate = next(it for it in profile.input if not it.optional)
 
         entry_name = baseentry['name'] + " (" + inputtemplate.label+")"
+        print("Processing",entry_name, file=sys.stderr)
         entry_filename = entry_name.replace('/',',') + '.json'
 
         #instantiate entry derived from base entry
