@@ -104,7 +104,7 @@ def convert(**kwargs):
     for profile in data.profiles:
         required = sum( 1 for inputtemplate in profile.input if not inputtemplate.optional)
         if required > 1:
-            print("Notice: Skipping a profile in this webservice because it has multiple mandatory input parameters. The switchboard does not support this.",file=sys.stderr)
+            print("Notice: Skipping a profile in this webservice because it has multiple mandatory input parameters. The switchboard does not support this: ", ", ".join([inputtemplate.id for inputtemplate in profile.input if not inputtemplate.optional ]), file=sys.stderr)
             continue
 
         inputtemplate = next(it for it in profile.input if not it.optional)
