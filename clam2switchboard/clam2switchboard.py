@@ -66,7 +66,7 @@ def convert(**kwargs):
     elif os.path.exists("../logos/" + data.system_id.lower() + ".png"):
         logo = data.system_id.lower() + ".png"
     else:
-        logo = None
+        logo = ""
 
     baseentry = {
         "name": first(data.system_name, codemetadata.get("name")),
@@ -82,6 +82,7 @@ def convert(**kwargs):
             "email": data.system_email,
         },
         "version": None,
+        "logo": "",
         "authentication":  auth_msg,
         "url": data.baseurl,
         "mapping": {},
@@ -91,8 +92,6 @@ def convert(**kwargs):
     }
     if 'withversion' in kwargs and kwargs['withversion']:
         baseentry['version'] = first(data.system_version if data.system_version else None, codemetadata.get("version"))
-    if logo:
-        baseentry['logo'] = logo
 
     if data.system_affiliation:
         #add affiliation to creators as well:
