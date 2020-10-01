@@ -91,7 +91,7 @@ def convert(**kwargs):
     }
     if 'withversion' in kwargs and kwargs['withversion']:
         baseentry['version'] = first(data.system_version if data.system_version else None, codemetadata.get("version"))
-    if logo is not None and logo and logo != "null":
+    if logo:
         baseentry['logo'] = logo
 
     if data.system_affiliation:
@@ -119,7 +119,7 @@ def convert(**kwargs):
         entry['name'] = entry_name
 
 
-        if os.path.exists(entry_filename):
+        if os.path.exists(entry_filename) and not ('ignore' in kwargs and kwargs['ignore']):
             with open(entry_filename,'r',encoding='utf-8') as f:
                 existing_entry = json.loads(f.read())
         else:
@@ -242,6 +242,7 @@ def main():
     parser.add_argument('--logo', help="Filename (not full path) of a logo image, needs to be put in registry manually", action='store',required=False)
     parser.add_argument('-l','--langs', type=str,help="Comma separated list of languages (iso-639-3 codes). If explicitly provided, they will not be derived from the service (which may not always work)", action='store',default="",required=False)
     parser.add_argument('--langparam', type=str,help="The name of the CLAM parameter that stores the language (if available at all)", action='store',default="language",required=False)
+    parser.add_argument("--ignore","-i", help="Ignore existing files, start from scratch", action='store_true')
     parser.add_argument("--withversion", help="Register version numbers", action='store')
     parser.add_argument('-e','--langencoding', type=int,help="Language encoding, set to 1 for iso-639-1 and 3 for iso-639-3", action='store',default=3,required=False)
     args = parser.parse_args()
