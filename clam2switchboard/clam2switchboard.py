@@ -76,10 +76,10 @@ def convert(**kwargs):
         "homepage": first(data.system_url, codemetadata.get("url"), codemetadata.get("codeRepository"), data.baseurl),
         "licence": first(data.system_license, codemetadata.get("license")),
         "location": first(data.system_affiliation, "unknown"), #not really the same, but will have to do for now
-        "creators": data.system_author,
+        "creators": data.system_author if data.system_author else "",
         "contact": {
-            "person": data.system_email, #we just use the e-mail as we can't strictly identify it with a person
-            "email": data.system_email,
+            "person": data.system_email if data.system_email else "", #we just use the e-mail as we can't strictly identify it with a person
+            "email": data.system_email if data.system_email else "",
         },
         "version": None,
         "logo": "",
