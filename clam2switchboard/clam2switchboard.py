@@ -91,7 +91,7 @@ def convert(**kwargs):
     }
     if 'withversion' in kwargs and kwargs['withversion']:
         baseentry['version'] = first(data.system_version if data.system_version else None, codemetadata.get("version"))
-    if logo:
+    if logo is not None and logo and logo != "null":
         baseentry['logo'] = logo
 
     if data.system_affiliation:
