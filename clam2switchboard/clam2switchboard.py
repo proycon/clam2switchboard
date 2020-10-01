@@ -84,7 +84,6 @@ def convert(**kwargs):
         "version": None,
         "authentication":  auth_msg,
         "url": data.baseurl,
-        "logo": logo,
         "mapping": {},
         "parameters": {},
         "mimetypes": [],
@@ -92,6 +91,8 @@ def convert(**kwargs):
     }
     if 'withversion' in kwargs and kwargs['withversion']:
         baseentry['version'] = first(data.system_version if data.system_version else None, codemetadata.get("version"))
+    if 'logo':
+        baseentry['logo'] = logo
 
     if data.system_affiliation:
         #add affiliation to creators as well:
