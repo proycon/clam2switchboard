@@ -82,7 +82,7 @@ def convert(**kwargs):
             "email": data.system_email if data.system_email else "",
         },
         "version": None,
-        "logo": "",
+        "logo": logo,
         "authentication":  auth_msg,
         "url": data.baseurl,
         "mapping": {},
