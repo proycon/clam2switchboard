@@ -224,7 +224,7 @@ def convert(**kwargs):
 
         entry['mapping']['input'] =  inputtemplate.id + '_url'
         entry['mimetypes'] = [ inputtemplate.formatclass.mimetype ]
-        entry['output'] = list(set( output.formatclass.mimetype for output in profile.outputtemplates() ))
+        entry['output'] = list(sorted(set( output.formatclass.mimetype for output in profile.outputtemplates() )))
         entry['langEncoding'] = "639-" + str(kwargs['langencoding'])
 
         print("Writing " + entry_filename,file=sys.stderr)
