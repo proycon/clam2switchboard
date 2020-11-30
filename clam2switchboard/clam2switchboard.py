@@ -220,7 +220,10 @@ def convert(**kwargs):
 
             entry['languages'] = langs
             entry['parameters']['lang'] = "self.linkToResourceLanguage"
-            entry['mapping']['lang'] = langparameter_prefix + '_' + langparameter.id
+            if langparameter_prefix:
+                entry['mapping']['lang'] = langparameter_prefix + '_' + langparameter.id
+            else:
+                entry['mapping']['lang'] = langparameter.id
 
         entry['mapping']['input'] =  inputtemplate.id + '_url'
         entry['mimetypes'] = [ inputtemplate.formatclass.mimetype ]
